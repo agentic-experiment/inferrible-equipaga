@@ -3,8 +3,8 @@
 Infer your packing list from a few trip details. Pick your trip, get a bag.
 One `index.html`, zero dependencies, zero build step.
 
-Open `index.html` in a browser. Optionally add `?selftest` to the URL to run
-the embedded self-check in the console.
+Live on GitHub Pages: https://agentic-experiment.github.io/inferrible-equipaga/
+Add `?selftest` to the URL to run the embedded self-check in the console.
 
 ## Step-by-step reasoning
 
