@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>inferrible·equipaga — infer your packing list</title>
+<style>
+  :root{
+    --bg:#0f1117; --panel:#171a24; --line:#262b3a;
+    --text:#e7e9f0; --muted:#9aa3b5; --accent:#6ee7b7;
+    --accent2:#38bdf8; --danger:#f87171;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  body{
+    font-family:system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    background:
+      radial-gradient(1200px 600px at 80% -10%, #1b2436 0%, transparent 60%),
+      radial-gradient(900px 500px at 0% 110%, #14202a 0%, transparent 55%),
+      var(--bg);
+    color:var(--text); min-height:100vh; padding:3rem 1rem 4rem;
+  }
+  .wrap{max-width:760px; margin:0 auto}
+  header{text-align:center; margin-bottom:2rem}
+  h1{font-size:clamp(1.6rem, 4vw, 2.4rem); letter-spacing:.02em}
+  h1 span{color:var(--accent)}
+  header p{color:var(--muted); margin-top:.4rem}
+
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:1.4rem; margin-bottom:1.4rem}
+  h2{font-size:1rem; text-transform:uppercase; letter-spacing:.12em; color:var(--muted); margin-bottom:1rem}
+
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:.9rem 1.2rem}
+  @media(max-width:640px){.grid{grid-template-columns:1fr}}
+
+  label.field{display:block; font-size:.9rem; color:var(--muted)}
+  select, input[type=number], input[type=date]{
+    width:100%; margin-top:.35rem; padding:.55rem .7rem; border-radius:8px;
+    border:1px solid var(--line); background:#10131c; color:var(--text); font-size:.95rem
+  }
+  select:focus, input:focus{outline:2px solid var(--accent2); border-color:transparent}
+  .full{grid-column:1/-1}
+
+  .chips{display:flex; flex-wrap:wrap; gap:.5rem; margin-top:.35rem}
+  .chip input{display:none}
+  .chip span{
+    display:inline-block; padding:.4rem .8rem; border:1px solid var(--line);
+    border-radius:999px; font-size:.85rem; color:var(--muted); cursor:pointer; user-select:none
+  }
+  .chip input:checked + span{background:var(--accent); color:#0b1220; border-color:var(--accent); font-weight:600}
+
+  .row{display:flex; align-items:center; gap:.6rem; font-size:.9rem; color:var(--muted); cursor:pointer}
+  .row input{width:16px; height:16px; accent-color:var(--accent)}
+
+  .bar{height:10px; background:#10131c; border:1px solid var(--line); border-radius:999px; overflow:hidden; margin-bottom:.5rem}
+  .bar > div{height:100%; width:0%; background:linear-gradient(90deg, var(--accent), var(--accent2)); transition:width .25s ease}
+  .count{color:var(--muted); font-size:.9rem; display:flex; justify-content:space-between}
+
+  ul#list{list-style:none; display:grid; gap:.4rem; max-height:420px; overflow:auto; padding-right:.3rem}
+  #list li{
+    display:flex; align-items:center; gap:.7rem; padding:.55rem .7rem;
+    border:1px solid var(--line); border-radius:10px; background:#10131c
+  }
+  #list input{width:16px; height:16px; accent-color:var(--accent); flex-shrink:0}
+  #list label{cursor:pointer; display:grid; min-width:0}
+  #list .item{font-size:.95rem}
+  #list .why{font-size:.78rem; color:var(--muted)}
+  #list li.done{opacity:.55}
+  #list li.done .item{text-decoration:line-through}
+
+  #empty{color:var(--muted); text-align:center; padding:1.5rem 0}
+  .actions{display:flex; gap:.7rem; margin-top:1rem}
+  button{
+    border:1px solid var(--line); background:#10131c; color:var(--text);
+    padding:.55rem 1rem; border-radius:8px; cursor:pointer; font-size:.9rem
+  }
+  button:hover{border-color:var(--accent2)}
+  button.primary{background:var(--accent); color:#0b1220; border-color:var(--accent); font-weight:600}
+  button.primary:hover{background:#7de8c2}
+
+  footer{text-align:center; color:var(--muted); font-size:.8rem}
+  footer a{color:var(--accent2)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>inferrible<span>·</span>equipaga</h1>
+    <p>Tell me your trip. I'll infer your bag — so you can stop overpacking.</p>
+  </header>
+
+  <section class="card" aria-label="Trip details">
+    <h2>Your trip</h2>
+    <div class="grid">
+      <label class="field">How long?
+        <input type="number" id="days" min="1" max="60" value="5">
+      </label>
+
+      <label class="field">Climate
+        <select id="climate">
+          <option value="mild">Mild / temperate</option>
+          <option value="hot">Hot / sunny</option>
+          <option value="cold">Cold</option>
+          <option value="rainy">Rainy season</option>
+          <option value="snow">Snow</option>
+        </select>
+      </label>
+
+      <label class="field">How do you get there?
+        <select id="transport">
+          <option value="flight">Plane</option>
+          <option value="car">Car / road trip</option>
+          <option value="train">Train</option>
+        </select>
+      </label>
+
+      <div class="field">What will you do?
+        <div class="chips" id="activities"></div>
+      </div>
+
+      <div class="full">
+        <label class="row">
+          <input type="checkbox" id="international" checked>
+          Going international (different country / timezone)
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <section class="card" aria-label="Packing list">
+    <h2>Your bag</h2>
+    <div class="bar"><div id="barFill"></div></div>
+    <div class="count"><span id="packedText">0 of 0 packed</span><span id="itemsText"></span></div>
+    <ul id="list"></ul>
+    <div id="empty">Fill in your trip details — the bag builds itself.</div>
+    <div class="actions">
+      <button class="primary" id="resetBtn">Reset packing</button>
+    </div>
+  </section>
+
+  <footer>One <code>index.html</code>. No frameworks, no build, no tracking.</footer>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  var ACTIVITIES = ['beach','hiking','business','party','camping','gym','culture'];
+
+  var RULES = [
+    { item:'Passport / ID',         when:t=>t.international, why:()=>'border control asks first' },
+    { item:'Cash + one card',       when:t=>t.transport!=='flight', why:()=>'ATMs love charging you' },
+    { item:'Phone + charger',       when:()=>true, why:()=>'your map, wallet and camera' },
+    { item:'Medications',           when:()=>true, why:()=>'not something to buy abroad' },
+
+    { item:'Laundry bag',           when:t=>t.days>=5, why:t=>t.days+' days means dirty clothes happen' },
+    { item:'Extra socks & underwear',when:t=>t.days>=5, why:t=>t.days+' days of walking feet' },
+    { item:'Refillable water bottle',when:t=>t.days>=10, why:()=>'hydration is a sport' },
+
+    { item:'Sunscreen SPF50',       when:t=>t.climate==='hot', why:()=>'the sun is an invisible enemy' },
+    { item:'Hat & sunglasses',      when:t=>t.climate==='hot', why:()=>'shade for your face' },
+    { item:'Swimsuit',              when:t=>t.climate==='hot', why:()=>'hot weather finds water eventually' },
+    { item:'Light jacket',          when:t=>t.climate==='mild', why:()=>'evenings get fresh' },
+    { item:'Warm jacket',           when:t=>t.climate==='cold', why:()=>'mild is code for layers' },
+    { item:'Gloves & beanie',       when:t=>t.climate==='cold'||t.climate==='snow', why:()=>'cold hands ruin trips' },
+    { item:'Umbrella',              when:t=>t.climate==='rainy', why:()=>'it will rain, statistically' },
+    { item:'Waterproof shoes',      when:t=>t.climate==='rainy', why:()=>'wet feet = ruined day' },
+    { item:'Thermal layers',        when:t=>t.climate==='snow', why:()=>'below zero is another sport' },
+    { item:'Snow boots',            when:t=>t.climate==='snow', why:()=>'snow eats regular shoes' },
+
+    { item:'Beach towel',           when:t=>t.activities.includes('beach'), why:()=>'hotel towels are not for sand' },
+    { item:'Flip-flops',            when:t=>t.activities.includes('beach'), why:()=>'the sand burns' },
+    { item:'Hiking boots',          when:t=>t.activities.includes('hiking'), why:()=>'trails are not sidewalks' },
+    { item:'Daypack',               when:t=>t.activities.includes('hiking')||t.activities.includes('culture'), why:()=>'hands-free exploring' },
+    { item:'Blazer / formal outfit',when:t=>t.activities.includes('business'), why:()=>'business mode on' },
+    { item:'Formal shoes',          when:t=>t.activities.includes('business'), why:()=>'sneakers will not pass' },
+    { item:'Going-out outfit',      when:t=>t.activities.includes('party'), why:()=>'the nightlife deserves a fit' },
+    { item:'Headlamp + first-aid',  when:t=>t.activities.includes('camping'), why:()=>'the forest has no streetlights' },
+    { item:'Workout clothes',       when:t=>t.activities.includes('gym'), why:()=>'sweat before the city wakes' },
+    { item:'Walking shoes',         when:t=>t.activities.includes('culture'), why:()=>'museums are a marathon' },
+
+    { item:'Travel-size toiletries',when:t=>t.transport==='flight', why:()=>'airlines hate full bottles' },
+    { item:'Empty water bottle',    when:t=>t.transport==='flight', why:()=>'fill it after security' },
+    { item:'Travel adapter',        when:t=>t.international, why:()=>'sockets are never yours' },
+    { item:'Snacks',                when:t=>t.transport==='car', why:()=>'road trips run on snacks' },
+    { item:'Phone mount',           when:t=>t.transport==='car', why:()=>'GPS without hands' },
+  ];
+
+  function readTrip(){
+    return {
+      days: Math.max(1, parseInt(document.getElementById('days').value, 10) || 1),
+      climate: document.getElementById('climate').value,
+      transport: document.getElementById('transport').value,
+      international: document.getElementById('international').checked,
+      activities: ACTIVITIES.filter(function(a){ return document.getElementById('act_'+a).checked; })
+    };
+  }
+
+  function infer(trip){
+    return RULES.filter(function(r){ return r.when(trip); })
+                .map(function(r){ return { item:r.item, why:r.why(trip) }; });
+  }
+
+  // ---------- UI ----------
+  var listEl = document.getElementById('list');
+  var barEl = document.getElementById('barFill');
+  var packedEl = document.getElementById('packedText');
+  var itemsEl = document.getElementById('itemsText');
+  var emptyEl = document.getElementById('empty');
+
+  function render(){
+    var trip = readTrip();
+    var items = infer(trip);
+    var checked = getChecked();
+    var packed = 0;
+
+    listEl.innerHTML = '';
+    items.forEach(function(it){
+      var li = document.createElement('li');
+      var id = 'ck_' + it.item.replace(/\W+/g,'_');
+      if (checked.indexOf(id) !== -1) li.className = 'done';
+
+      var cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.id = id; cb.checked = li.className === 'done';
+      cb.addEventListener('change', function(){ toggle(id, cb.checked); });
+
+      var lab = document.createElement('label');
+      lab.htmlFor = id;
+      lab.innerHTML = '<span class="item"></span><span class="why"></span>';
+      lab.querySelector('.item').textContent = it.item;
+      lab.querySelector('.why').textContent = it.why;
+
+      li.appendChild(cb); li.appendChild(lab);
+      listEl.appendChild(li);
+      if (cb.checked) packed++;
+    });
+
+    emptyEl.style.display = items.length ? 'none' : 'block';
+    itemsEl.textContent = items.length + ' items inferred';
+    packedEl.textContent = packed + ' of ' + items.length + ' packed';
+    barEl.style.width = items.length ? Math.round(packed/items.length*100) + '%' : '0%';
+  }
+
+  function getChecked(){
+    try { return JSON.parse(localStorage.getItem('inferrible.checked') || '[]'); }
+    catch(e){ return []; }
+  }
+  function toggle(id, on){
+    var list = getChecked();
+    var i = list.indexOf(id);
+    if (on && i === -1) list.push(id);
+    if (!on && i !== -1) list.splice(i, 1);
+    localStorage.setItem('inferrible.checked', JSON.stringify(list));
+    render();
+  }
+  document.getElementById('resetBtn').addEventListener('click', function(){
+    localStorage.removeItem('inferrible.checked');
+    render();
+  });
+
+  // build activity chips + wire everything
+  var chips = document.getElementById('activities');
+  ACTIVITIES.forEach(function(a){
+    var lab = document.createElement('label');
+    lab.className = 'chip';
+    lab.innerHTML = '<input type="checkbox" id="act_'+a+'" checked><span>'+a+'</span>';
+    chips.appendChild(lab);
+  });
+  document.addEventListener('input', render);
+  render();
+
+  // ---------- self-check (run in console: selftest()) ----------
+  window.selftest = function(){
+    var t = { days:7, climate:'hot', transport:'flight', international:true, activities:['beach'] };
+    var got = infer(t).map(function(i){ return i.item; }).join('|');
+    var need = ['Sunscreen SPF50','Beach towel','Travel-size toiletries','Passport / ID','Swimsuit'];
+    var missing = need.filter(function(n){ return got.indexOf(n) === -1; });
+    var junk = got.indexOf('Snow boots') !== -1 || got.indexOf('Phone mount') !== -1;
+    if (missing.length) throw new Error('selftest: missing ' + missing.join(', '));
+    if (junk) throw new Error('selftest: inferred irrelevant items');
+    var base = infer({days:2, climate:'hot', transport:'flight', international:false, activities:[]}).length;
+    if (base !== 7) throw new Error('selftest: baseline length wrong (got ' + base + ')'); // always(2) + hot(3) + flight(2)
+    return 'selftest passed: ' + got;
+  };
+  if (location.search.indexOf('selftest') !== -1) console.log(selftest());
+})();
+</script>
+</body>
+</html>
